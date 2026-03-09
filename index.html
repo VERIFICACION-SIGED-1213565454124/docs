@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Recetas Médicas</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #1a2236;
+            --card-bg: #242f4d;
+            --text-color: #ffffff;
+            --accent-color: #4a90e2;
+            --input-bg: #1e2841;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .form-container {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        h2 { border-bottom: 2px solid var(--accent-color); padding-bottom: 10px; }
+
+        .form-group { margin-bottom: 15px; }
+
+        label { display: block; margin-bottom: 5px; font-size: 0.9em; font-weight: bold; }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--input-bg);
+            border: 1px solid #3d4b71;
+            border-radius: 4px;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--accent-color);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+
+        button:hover { background-color: #357abd; }
+
+        /* Estilos del Documento Oculto (Vista de Impresión) */
+        #receta-template {
+            display: none; /* Se oculta en la web, solo aparece en el PDF */
+            width: 800px;
+            padding: 40px;
+            color: black;
+            background: white;
+        }
+
+        .header-receta {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            margin-bottom: 20px;
+        }
+
+        .info-paciente {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border: 1px solid #000;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .cuerpo-receta {
+            min-height: 400px;
+            border: 1px solid #000;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .footer-receta {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            border-top: 1px solid #000;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="form-container">
+    <h2>RECETA MÉDICA</h2>
+    
+    <div class="form-group">
+        <label>CURP</label>
+        <input type="text" id="curp" placeholder="Ingrese CURP">
+    </div>
+
+    <div class="form-group">
+        <label>NOMBRE COMPLETO *</label>
+        <input type="text" id="nombre" placeholder="Nombre del paciente">
+    </div>
+
+    <div class="form-group">
+        <label>FECHA EMISIÓN *</label>
+        <input type="date" id="fecha">
+    </div>
+
+    <div class="form-group">
+        <label>CLÍNICA / CONSULTORIO *</label>
+        <input type="text" id="clinica" placeholder="Nombre de tu clínica">
+    </div>
+
+    <div class="form-group">
+        <label>DIAGNÓSTICO / MEDICAMENTOS</label>
+        <textarea id="medicamentos" rows="6" placeholder="Ej: Amoxicilina 500mg - 1 cada 8 horas por 7 días"></textarea>
+    </div>
+
+    <button onclick="generarPDF()">GENERAR Y DESCARGAR PDF</button>
+</div>
+
+<div id="receta-template">
+    <div class="header-receta">
+        <h1 id="t-clinica">CONSULTORIO MÉDICO PROFESIONAL</h1>
+        <p>DIRECCIÓN DE ATENCIÓN MÉDICA</p>
+        <h3>RECETA INDIVIDUAL</h3>
+    </div>
+
+    <div class="info-paciente">
+        <div>
+            <strong>PACIENTE:</strong> <span id="t-nombre"></span><br>
+            <strong>CURP:</strong> <span id="t-curp"></span>
+        </div>
+        <div style="text-align: right;">
+            <strong>FECHA:</strong> <span id="t-fecha"></span>
+        </div>
+    </div>
+
+    <div class="cuerpo-receta">
+        <strong>INDICACIONES Y TRATAMIENTO:</strong>
+        <p id="t-medicamentos" style="white-space: pre-wrap; margin-top: 20px;"></p>
+    </div>
+
+    <div class="footer-receta">
+        <div>
+            __________________________<br>
+            Nombre y Firma del Médico
+        </div>
+        <div style="text-align: right;">
+            Cédula Profesional: ___________<br>
+            Universidad: ___________
+        </div>
+    </div>
+</div>
+
+<script>
+    function generarPDF() {
+        // 1. Pasar datos del formulario al template
+        document.getElementById('t-nombre').innerText = document.getElementById('nombre').value;
+        document.getElementById('t-curp').innerText = document.getElementById('curp').value;
+        document.getElementById('t-fecha').innerText = document.getElementById('fecha').value;
+        document.getElementById('t-clinica').innerText = document.getElementById('clinica').value.toUpperCase();
+        document.getElementById('t-medicamentos').innerText = document.getElementById('medicamentos').value;
+
+        // 2. Configuración del PDF
+        const elemento = document.getElementById('receta-template');
+        elemento.style.display = 'block'; // Mostrar temporalmente para capturarlo
+
+        const opciones = {
+            margin:       10,
+            filename:     'Receta_' + document.getElementById('nombre').value + '.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'mm', format: 'letter', orientation: 'portrait' }
+        };
+
+        // 3. Generar y ocultar de nuevo
+        html2pdf().set(opciones).from(elemento).save().then(() => {
+            elemento.style.display = 'none';
+        });
+    }
+</script>
+
+</body>
+</html>
